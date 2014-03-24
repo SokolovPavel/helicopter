@@ -1,4 +1,3 @@
-helicopter
-==========
-
-Mod that adds helicopter to the Minetest
+Minetest 0.4.9 mod: Simple helicopter
+=======================
+by Pavel_S
