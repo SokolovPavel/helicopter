@@ -83,7 +83,7 @@ function heli:on_activate(staticdata, dtime_s)
 	self.prev_y=self.object:getpos()
 	if self.model == nil then
 		self.model = minetest.env:add_entity(self.object:getpos(), "helicopter:heliModel")
-		self.model:set_attach(self.object, "", {x=0,y=0,z=5}, {x=0,y=0,z=0})	
+		self.model:set_attach(self.object, "", {x=0,y=-5,z=0}, {x=0,y=0,z=0})	
 	end
 end
 
@@ -107,6 +107,8 @@ function heli:on_step(dtime)
 	--Prevent multi heli control bug
 	if self.driver and ( math.abs(self.driver:getpos().x-self.object:getpos().x)>10*dtime or math.abs(self.driver:getpos().y-self.object:getpos().y)>10*dtime or math.abs(self.driver:getpos().z-self.object:getpos().z)>10*dtime) then
 		self.driver = nil
+		self.model:set_animation({x=0,y=1},0, 0)
+		minetest.sound_stop(self.soundHandle)
 	end
 	
 	if self.driver then
@@ -144,16 +146,10 @@ function heli:on_step(dtime)
 			end
 		end
 		--
-		--Speed limit
-		if math.abs(self.vx) > 4.5 then
-			self.vx = 4.5*get_sign(self.vx)
-		end
-		if math.abs(self.vz) > 4.5 then
-			self.vz = 4.5*get_sign(self.vz)
-		end
-		
 	end
-	
+	if self.vx==0 and self.vz==0 and self.vy==0 then
+		return
+	end
 	--Decelerating
 	local sx=get_sign(self.vx)
 	self.vx = self.vx - 0.02*sx
@@ -169,7 +165,9 @@ function heli:on_step(dtime)
 	if sz ~= get_sign(self.vz) then
 		self.vz = 0
 	end
-	
+	if sy ~= get_sign(self.vy) then
+		self.vy = 0
+	end
 	
 	--Speed limit
 	if math.abs(self.vx) > 4.5 then
@@ -179,10 +177,11 @@ function heli:on_step(dtime)
 		self.vz = 4.5*get_sign(self.vz)
 	end
 	if math.abs(self.vy) > 4.5 then
-		self.vz = 4.5*get_sign(self.vz)
+		self.vz = 4.5*get_sign(self.vy)
 	end
 	
 	--Set speed to entity
+	
 	self.object:setvelocity({x=self.vx, y=self.vy,z=self.vz})
 	if self.model then
 		self.model:set_attach(self.object,"Root", {x=0,y=0,z=5}, {
@@ -225,6 +224,9 @@ minetest.register_craftitem("helicopter:heli", {
 	
 	on_place = function(itemstack, placer, pointed_thing)
 		if pointed_thing.type ~= "node" then
+			return
+		end
+		if minetest.get_node(pointed_thing.above).name ~= "air" then
 			return
 		end
 		minetest.env:add_entity(pointed_thing.above, "helicopter:heli")
