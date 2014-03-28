@@ -4,10 +4,10 @@ by Pavel_S
 
 License of source code:
 -----------------------
-WTFPL
+GPL_v2
 
 License of media (textures and sounds):
 ---------------------------------------
-WTFPL
+
 helicopter_motor.ogg by  Robinhood76 | License: Attribution Noncommercial
 
