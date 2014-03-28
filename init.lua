@@ -1,24 +1,12 @@
-
 --
 -- Helper functions
 --
-
 local function get_sign(i)
 	if i == 0 then
 		return 0
 	else
 		return i/math.abs(i)
 	end
-end
-
-local function get_velocity(vx, vy, vz, yaw)
-	local x = math.cos(yaw)*vx+math.cos(math.pi/2+yaw)*vz
-	local z = math.sin(yaw)*vx+math.sin(math.pi/2+yaw)*vz
-	return {x=x, y=vy, z=z}
-end
-
-local function get_v(v)
-	return math.sqrt(vx^2+vz^2)
 end
 
 --
@@ -28,10 +16,8 @@ end
 local heli = {
 	physical = true,
 	collisionbox = {-1,-0.6,-1, 1,0.3,1},
-	
-	--Just copy from lua api for test
+	makes_footstep_sound = false,
 	collide_with_objects = true,
-	weight = 5,
 	
 	visual = "mesh",
 	mesh = "root.x",
@@ -40,22 +26,13 @@ local heli = {
 	
 	--Heli mesh
 	model = nil,
-	
-	--In progress
-	motor = nil,
-	left = true,
-	timer=0,
-	
 	--Rotation
 	yaw=0,
-	
-	--Detect hit an object or node
-	prev_y=0,
-	
 	--Speeds
 	vx=0,
 	vy=0,
-	vz=0
+	vz=0,
+	soundHandle=nil
 	
 	
 }
@@ -64,35 +41,21 @@ local heliModel = {
 	mesh = "heli.x",
 	textures = {"blades.png","blades.png","heli.png","Glass.png"},
 }	
-local motor = {
-	physical = true,
-	collisionbox = {-2,0.5,-1, 1,1,1},
-	visual = "mesh",
-	mesh = "motor.x",
-	textures = {"motor.png"},
-	driver = nil,
-	left = true,
-	timer=0,
-	vx = 0,--Velo. for/back-ward
-	vy = 0,--Velo. up/down
-	vz = 0--Velo. side
-}
 
 function heli:on_rightclick(clicker)
 	if not clicker or not clicker:is_player() then
 		return
 	end
 	if self.driver and clicker == self.driver then
-		clicker:set_attach(self.model, "Root", {x=0,y=0,z=0}, {x=0,y=0,z=0})
-		self.driver = nil
 		clicker:set_detach()
+		self.driver = nil
 		self.model:set_animation({x=0,y=1},0, 0)
+		minetest.sound_stop(self.soundHandle)
 	elseif not self.driver then
-		self.model:set_animation({x=0,y=10},10, 0)
+		self.soundHandle=minetest.sound_play({name="helicopter_motor"},{object = self.object, gain = 2.0, max_hear_distance = 32, loop = true,})
+		self.model:set_animation({x=0,y=11},30, 0)
 		self.driver = clicker
-		--self.driver:set_animation({ x= 81, y=160, },10,0)
-		clicker:set_attach(self.model, "Root", {x=0,y=0,z=-10}, {x=-90,y=0,z=-90})
-		--self.object:setyaw(clicker:get_look_yaw())
+		clicker:set_attach(self.model, "", {x=0,y=14,z=0}, {x=0,y=0,z=0})
 	end
 end
 
@@ -120,18 +83,19 @@ function heli:on_activate(staticdata, dtime_s)
 	self.prev_y=self.object:getpos()
 	if self.model == nil then
 		self.model = minetest.env:add_entity(self.object:getpos(), "helicopter:heliModel")
-		self.model:set_attach(self.object, "Root", {x=0,y=0,z=2}, {x=0,y=0,z=0})	
+		self.model:set_attach(self.object, "", {x=0,y=0,z=5}, {x=0,y=0,z=0})	
 	end
-end
-
-function heli:get_staticdata(self)	
 end
 
 function heli:on_punch(puncher, time_from_last_punch, tool_capabilities, direction)
 	if self.model ~= nil then
 		self.model:remove()
 	end
+	if self.soundHandle then
+		minetest.sound_stop(self.soundHandle)
+	end
 	self.object:remove()
+	
 	if puncher and puncher:is_player() then
 		puncher:get_inventory():add_item("main", "helicopter:heli")
 	end
@@ -140,9 +104,6 @@ function heliModel:on_punch(puncher, time_from_last_punch, tool_capabilities, di
 	self.object:remove()
 end
 function heli:on_step(dtime)
-	--Prevent shaking heli while sitting in it
-	
-	
 	--Prevent multi heli control bug
 	if self.driver and ( math.abs(self.driver:getpos().x-self.object:getpos().x)>10*dtime or math.abs(self.driver:getpos().y-self.object:getpos().y)>10*dtime or math.abs(self.driver:getpos().z-self.object:getpos().z)>10*dtime) then
 		self.driver = nil
@@ -223,21 +184,11 @@ function heli:on_step(dtime)
 	
 	--Set speed to entity
 	self.object:setvelocity({x=self.vx, y=self.vy,z=self.vz})
-	--Model rotation 
-	--[[if self.driver then
-	self.model:set_attach(self.object,"Root", 
-	{x=-(self.driver:getpos().x-self.object:getpos().x)*dtime,
-	y=-(self.driver:getpos().z-self.object:getpos().z)*dtime,
-	z=-(self.driver:getpos().y-self.object:getpos().y)*dtime}, {
-			x=-90+self.vz*5*math.cos(self.yaw)-self.vx*5*math.sin(self.yaw), 
-			y=0-self.vz*5*math.sin(self.yaw)-self.vx*5*math.cos(self.yaw), 
-			z=self.yaw*57})
-	else]]--
 	if self.model then
-		self.model:set_attach(self.object,"Root", {x=0,y=0,z=0}, {
-			x=-90+self.vz*4*math.cos(self.yaw)-self.vx*4*math.sin(self.yaw), 
-			y=0-self.vz*4*math.sin(self.yaw)-self.vx*4*math.cos(self.yaw), 
-			z=self.yaw*57})
+		self.model:set_attach(self.object,"Root", {x=0,y=0,z=5}, {
+			x=-90+self.vx*3*math.cos(self.yaw)+self.vz*3*math.sin(self.yaw), 
+			y=0-self.vx*3*math.sin(self.yaw)+self.vz*3*math.cos(self.yaw), 
+			z=(self.yaw-math.pi/2)*57})
 	end
 end
 
@@ -247,8 +198,6 @@ end
 
 minetest.register_entity("helicopter:heli", heli)
 minetest.register_entity("helicopter:heliModel", heliModel)
-minetest.register_entity("helicopter:motor", motor)
---minetest.register_entity("helicopter:rocket", rocket)
 
 --
 --Craft items
@@ -278,10 +227,7 @@ minetest.register_craftitem("helicopter:heli", {
 		if pointed_thing.type ~= "node" then
 			return
 		end
-		pointed_thing.under.y = pointed_thing.under.y+1
-		minetest.env:add_entity(pointed_thing.under, "helicopter:heli")
-		--minetest.env:add_entity(pointed_thing.under, "helicopter:heliModel")
-		--minetest.env:add_entity(pointed_thing.under, "helicopter:motor")
+		minetest.env:add_entity(pointed_thing.above, "helicopter:heli")
 		itemstack:take_item()
 		return itemstack
 	end,
