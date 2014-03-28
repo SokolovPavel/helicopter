@@ -1,4 +1,4 @@
-Minetest 0.4.7 mod: Simple helicopter
+Minetest 0.4.7+ mod: Simple helicopter
 =======================
 by Pavel_S
 
