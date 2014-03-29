@@ -79,7 +79,8 @@ function heliModel:on_activate(staticdata, dtime_s)
 end
 
 function heli:on_activate(staticdata, dtime_s)
-	self.object:set_armor_groups({immortal=1})
+	self.object:set_armor_groups({cracky=80,choppy=80,fleshy=80})
+	self.object:set_hp(30)
 	self.prev_y=self.object:getpos()
 	if self.model == nil then
 		self.model = minetest.env:add_entity(self.object:getpos(), "helicopter:heliModel")
@@ -88,16 +89,19 @@ function heli:on_activate(staticdata, dtime_s)
 end
 
 function heli:on_punch(puncher, time_from_last_punch, tool_capabilities, direction)
-	if self.model ~= nil then
-		self.model:remove()
-	end
-	if self.soundHandle then
-		minetest.sound_stop(self.soundHandle)
-	end
-	self.object:remove()
-	
-	if puncher and puncher:is_player() then
-		puncher:get_inventory():add_item("main", "helicopter:heli")
+	if self.object:get_hp() == 0 then
+		if self.model ~= nil then
+			self.model:remove()
+		end
+		if self.soundHandle then
+			minetest.sound_stop(self.soundHandle)
+		end
+		self.object:remove()
+		
+		if puncher and puncher:is_player() then
+			puncher:get_inventory():add_item("main", "default:steel_ingot 5")
+			puncher:get_inventory():add_item("main", "default:mese_crystal")
+		end
 	end
 end
 function heliModel:on_punch(puncher, time_from_last_punch, tool_capabilities, direction)
@@ -114,7 +118,9 @@ function heli:on_step(dtime)
 	if self.driver then
 		--self.driver:set_animation({ x= 81, y=160, },10,0)
 		self.yaw = self.driver:get_look_yaw()
-		v = self.object:getvelocity()
+		self.vx = self.object:getvelocity().x
+		self.vy = self.object:getvelocity().y
+		self.vz = self.object:getvelocity().z
 		local ctrl = self.driver:get_player_control()
 		--Forward/backward
 		if ctrl.up then
