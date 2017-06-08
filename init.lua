@@ -62,7 +62,7 @@ end
 function heliModel:on_activate(staticdata, dtime_s)
 	self.object:set_armor_groups({immortal=1})
 	local is_attached = false
-	for _,object in ipairs(minetest.env:get_objects_inside_radius(self.object:getpos(), 2)) do
+	for _,object in ipairs(minetest.get_objects_inside_radius(self.object:getpos(), 2)) do
 		if object and object:get_luaentity() and object:get_luaentity().name=="helicopter:heli" then
 			if object:get_luaentity().model == nil then
 				object:get_luaentity().model = self
@@ -83,7 +83,7 @@ function heli:on_activate(staticdata, dtime_s)
 	self.object:set_hp(30)
 	self.prev_y=self.object:getpos()
 	if self.model == nil then
-		self.model = minetest.env:add_entity(self.object:getpos(), "helicopter:heliModel")
+		self.model = minetest.add_entity(self.object:getpos(), "helicopter:heliModel")
 		self.model:set_attach(self.object, "", {x=0,y=-5,z=0}, {x=0,y=0,z=0})	
 	end
 end
@@ -235,7 +235,7 @@ minetest.register_craftitem("helicopter:heli", {
 		if minetest.get_node(pointed_thing.above).name ~= "air" then
 			return
 		end
-		minetest.env:add_entity(pointed_thing.above, "helicopter:heli")
+		minetest.add_entity(pointed_thing.above, "helicopter:heli")
 		itemstack:take_item()
 		return itemstack
 	end,
