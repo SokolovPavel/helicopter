@@ -11,3 +11,4 @@ License of media (textures and sounds):
 
 helicopter_motor.ogg by  Robinhood76 | License: Attribution Noncommercial
 
+Textures and helicopter model by Pavel_S | License: CC0
