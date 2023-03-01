@@ -1,10 +1,10 @@
 Minetest 0.4.7+ mod: Simple helicopter
 =======================
-by Pavel_S
+by Pavel_S, and contributors (see commits logs)
 
 License of source code:
 -----------------------
-GPL_v2
+GPL_v2 or any later version
 
 License of media (textures and sounds):
 ---------------------------------------
